@@ -186,7 +186,7 @@ export default function Session() {
                 </div>
 
                 {/* Console Panel - Fixed Bottom Layout */}
-                <div className="h-[300px] w-full border-t border-slate-700 shrink-0 flex flex-col bg-slate-900">
+                <div className="h-300px w-full border-t border-slate-700 shrink-0 flex flex-col bg-slate-900">
                     <Console
                         output={output}
                         onRun={runCode}
