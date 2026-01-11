@@ -36,11 +36,11 @@ app.post('/api/sessions', (req, res) => {
 app.get('/api/sessions/:sessionId', (req, res) => {
   const { sessionId } = req.params;
   const session = sessions[sessionId];
-  
+
   if (!session) {
     return res.status(404).json({ error: 'Session not found' });
   }
-  
+
   res.json({
     sessionId,
     code: session.code,
@@ -56,13 +56,13 @@ io.on('connection', (socket) => {
     if (sessions[sessionId]) {
       socket.join(sessionId);
       sessions[sessionId].participants.add(socket.id);
-      
+
       // Send current state to the joining user
       socket.emit('init-session', {
         code: sessions[sessionId].code,
         language: sessions[sessionId].language
       });
-      
+
       // Notify others
       io.to(sessionId).emit('user-joined', { userId: socket.id, count: sessions[sessionId].participants.size });
       console.log(`User ${socket.id} joined session ${sessionId}`);
@@ -85,11 +85,11 @@ io.on('connection', (socket) => {
       io.to(sessionId).emit('language-update', language);
     }
   });
-  
+
   socket.on('output-change', ({ sessionId, output }) => {
-     // Broadcast output (console logs) to all users so they see real-time execution results
-     // This is optional but cool for "Show real-time updates"
-     socket.to(sessionId).emit('output-update', output);
+    // Broadcast output (console logs) to all users so they see real-time execution results
+    // This is optional but cool for "Show real-time updates"
+    socket.to(sessionId).emit('output-update', output);
   });
 
   socket.on('disconnecting', () => {
@@ -99,14 +99,18 @@ io.on('connection', (socket) => {
       if (sessions[roomId]) {
         sessions[roomId].participants.delete(socket.id);
         io.to(roomId).emit('user-left', { userId: socket.id, count: sessions[roomId].participants.size });
-        
+
         // Cleanup empty sessions after some time if needed, but skipping for simplicity
       }
     });
   });
 });
 
-const PORT = 3001;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (require.main === module) {
+  const PORT = process.env.PORT || 3001;
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = { app, server };

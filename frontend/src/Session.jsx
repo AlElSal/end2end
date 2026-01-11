@@ -65,42 +65,93 @@ export default function Session() {
         socketRef.current.emit('language-change', { sessionId, language: newLang });
     };
 
+    const [pyodide, setPyodide] = useState(null);
+    const [isPyLoading, setIsPyLoading] = useState(false);
+
+    // Load Pyodide lazily
+    const loadPyodide = async () => {
+        if (pyodide) return pyodide;
+        setIsPyLoading(true);
+        try {
+            // Load script dynamically
+            if (!window.loadPyodide) {
+                const script = document.createElement('script');
+                script.src = "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js";
+                document.head.appendChild(script);
+                await new Promise((resolve) => (script.onload = resolve));
+            }
+            const py = await window.loadPyodide({
+                indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
+            });
+            setPyodide(py);
+            setIsPyLoading(false);
+            return py;
+        } catch (err) {
+            console.error("Failed to load Pyodide", err);
+            setIsPyLoading(false);
+            return null;
+        }
+    };
+
     // Run Code
-    const runCode = () => {
-        if (language !== 'javascript') {
-            setOutput(prev => [...prev, { type: 'error', content: `Execution for ${language} is not supported in the browser demo.` }]);
+    const runCode = async () => {
+        setIsRunning(true);
+        setOutput([]);
+
+        if (language === 'javascript') {
+            executeJS();
+        } else if (language === 'python') {
+            await executePython();
+        } else {
+            setOutput(prev => [...prev, { type: 'error', content: `Execution for ${language} is not supported yet.` }]);
+            setIsRunning(false);
+        }
+    };
+
+    const executePython = async () => {
+        const py = await loadPyodide();
+        if (!py) {
+            setOutput(prev => [...prev, { type: 'error', content: "Failed to load Python environment." }]);
+            setIsRunning(false);
             return;
         }
 
-        setIsRunning(true);
-        setOutput([]); // Clear previous
+        try {
+            // Redirect stdout
+            py.setStdout({
+                batched: (str) => {
+                    setOutput(prev => [...prev, { type: 'log', content: str }]);
+                }
+            });
+            py.setStderr({
+                batched: (str) => {
+                    setOutput(prev => [...prev, { type: 'error', content: str }]);
+                }
+            });
 
+            await py.runPythonAsync(code);
+        } catch (err) {
+            setOutput(prev => [...prev, { type: 'error', content: err.toString() }]);
+        } finally {
+            setIsRunning(false);
+        }
+    };
+
+    const executeJS = () => {
         // Create a worker to run the code
         const workerCode = `
       self.onmessage = function(e) {
         const code = e.data;
-        const logs = [];
         
         // Override console
-        const originalLog = console.log;
-        console.log = (...args) => {
-          self.postMessage({ type: 'log', content: args.join(' ') });
-        };
-        console.error = (...args) => {
-          self.postMessage({ type: 'error', content: args.join(' ') });
-        };
+        console.log = (...args) => self.postMessage({ type: 'log', content: args.join(' ') });
+        console.error = (...args) => self.postMessage({ type: 'error', content: args.join(' ') });
         
         try {
            const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
            const func = new AsyncFunction(code);
-           
-           func().then(() => {
-              self.postMessage({ type: 'done' });
-           }).catch(err => {
-              console.error(err.toString());
-              self.postMessage({ type: 'done' });
-           });
-           
+           func().then(() => self.postMessage({ type: 'done' }))
+                .catch(err => { console.error(err.toString()); self.postMessage({ type: 'done' }); });
         } catch (err) {
           console.error(err.toString());
           self.postMessage({ type: 'done' });

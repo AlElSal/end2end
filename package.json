@@ -1,0 +1,25 @@
+{
+  "name": "end2end",
+  "version": "1.0.0",
+  "description": "A full-stack online coding interview platform featuring real-time collaboration, safe code execution, and a premium seamless UI.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "test": "npm run test --prefix backend"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlElSal/end2end.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/AlElSal/end2end/issues"
+  },
+  "homepage": "https://github.com/AlElSal/end2end#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
