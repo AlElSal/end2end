@@ -3,6 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -11,11 +12,22 @@ const server = http.createServer(app);
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from the 'public' directory (production build)
+app.use(express.static(path.join(__dirname, 'public')));
+
 const io = new Server(server, {
   cors: {
-    origin: "*", // Allow all origins for simplicity in this demo
+    origin: "*",
     methods: ["GET", "POST"]
   }
+});
+
+// Wildcard route to handle React Router in production
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
+  res.sendFile(path.join(__dirname, 'public', 'index.html'), (err) => {
+    if (err) next();
+  });
 });
 
 // In-memory store for sessions
