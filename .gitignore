@@ -1,0 +1,9 @@
+node_modules
+.env
+build
+coverage
+vite.config.js
+package-lock.json
+yarn.lock   
+pycache
+__pycache__

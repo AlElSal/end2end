@@ -1,0 +1,48 @@
+openapi: 3.0.0
+info:
+  title: Interview Platform API
+  description: API for managing coding interview sessions.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3001
+paths:
+  /api/sessions:
+    post:
+      summary: Create a new session
+      responses:
+        '201':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId:
+                    type: string
+                    example: "msg-1234-5678"
+  /api/sessions/{sessionId}:
+    get:
+      summary: Get session details
+      parameters:
+        - in: path
+          name: sessionId
+          schema:
+            type: string
+          required: true
+          description: ID of the session to retrieve
+      responses:
+        '200':
+          description: Session details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId:
+                    type: string
+                  code:
+                    type: string
+                  language:
+                    type: string
+        '404':
+          description: Session not found
